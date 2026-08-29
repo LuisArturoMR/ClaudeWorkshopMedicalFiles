@@ -96,9 +96,15 @@ st.markdown("""
     /* Logo container */
     .logo-container {
         text-align: center;
-        padding: 1rem 0;
+        padding: 1.5rem 1rem;
         margin-bottom: 1.5rem;
-        border-bottom: 1px solid #e0e0e0;
+        border-bottom: 2px solid #1a7a7a;
+    }
+
+    /* Sidebar image styling */
+    [data-testid="stSidebar"] img {
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
     }
 
     /* Sidebar menu items */
@@ -281,12 +287,20 @@ if "generator" not in st.session_state:
 # SIDEBAR - NAVEGACIÓN (Diseño CustodIA)
 # ════════════════════════════════════════════════════════════════════════════
 
-# Logo en sidebar - Usar ruta correcta
+# Logo en sidebar - Cargar desde raíz del proyecto
 from PIL import Image
-try:
-    logo = Image.open("logo.jpeg")
-    st.sidebar.image(logo, use_column_width=True)
-except:
+import os
+
+logo_path = "logo.jpeg"
+if os.path.exists(logo_path):
+    try:
+        logo = Image.open(logo_path)
+        st.sidebar.image(logo, use_column_width=True, caption="")
+        st.sidebar.markdown("")  # Espaciador
+    except Exception as e:
+        st.sidebar.markdown("### 📋 CustodIA")
+        st.sidebar.markdown(f"*Error: {str(e)[:30]}*")
+else:
     st.sidebar.markdown("### 📋 CustodIA")
 
 # Navegación principal

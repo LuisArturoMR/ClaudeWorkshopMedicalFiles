@@ -295,11 +295,9 @@ logo_path = "logo.jpeg"
 if os.path.exists(logo_path):
     try:
         logo = Image.open(logo_path)
-        st.sidebar.image(logo, use_column_width=True, caption="")
-        st.sidebar.markdown("")  # Espaciador
+        st.sidebar.image(logo, width=200)
     except Exception as e:
         st.sidebar.markdown("### 📋 CustodIA")
-        st.sidebar.markdown(f"*Error: {str(e)[:30]}*")
 else:
     st.sidebar.markdown("### 📋 CustodIA")
 

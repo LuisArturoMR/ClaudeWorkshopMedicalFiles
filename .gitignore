@@ -3,6 +3,7 @@
 # Archivos originales (contienen datos reales)
 raw_data/
 organized_data/
+organized_files/
 for_claude/
 
 # Outputs (pueden contener información generada)

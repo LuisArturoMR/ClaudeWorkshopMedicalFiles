@@ -270,6 +270,10 @@ if page == "🏠 Inicio":
 elif page == "📁 Organizar Archivos":
     st.markdown("## 📁 Organizar Archivos Médicos")
 
+    # Crear directorio persistente para archivos organizados
+    ORGANIZED_DIR = Path("organized_files")
+    ORGANIZED_DIR.mkdir(exist_ok=True)
+
     st.markdown("""
     Carga tus archivos y el sistema los organizará automáticamente por categoría:
     - **Pólizas**: Documentos de seguros médicos
@@ -278,6 +282,33 @@ elif page == "📁 Organizar Archivos":
     - **Apelaciones**: Correspondencia de apelaciones
     - **Medicamentos**: Información de prescripciones
     """)
+
+    st.markdown("---")
+
+    # Mostrar archivos ya organizados
+    st.markdown("### 📂 Archivos Organizados (Almacenados):")
+
+    all_organized = {}
+    for category_dir in sorted(ORGANIZED_DIR.iterdir()):
+        if category_dir.is_dir():
+            files = list(category_dir.glob("*"))
+            if files:
+                all_organized[category_dir.name] = files
+
+    if all_organized:
+        for category, files in all_organized.items():
+            with st.expander(f"**{category}** ({len(files)} archivo(s))", expanded=False):
+                for f in files:
+                    col1, col2 = st.columns([4, 1])
+                    with col1:
+                        st.markdown(f"📄 {f.name}")
+                    with col2:
+                        if st.button("🗑️", key=f"delete_{f}", help="Eliminar"):
+                            f.unlink()
+                            st.success(f"Eliminado: {f.name}")
+                            st.rerun()
+    else:
+        st.info("📭 No hay archivos organizados aún. Carga algunos arriba.")
 
     st.markdown("---")
 
@@ -328,7 +359,10 @@ elif page == "📁 Organizar Archivos":
                         "Medicamentos": ["medicamento", "medicina", "prescripción"],
                     }
 
-                    # Estructura en memoria para guardar referencias
+                    # Crear carpetas persistentes
+                    for category in list(categories.keys()) + ["Otros"]:
+                        (ORGANIZED_DIR / category).mkdir(exist_ok=True)
+
                     organized_files = {cat: [] for cat in list(categories.keys()) + ["Otros"]}
 
                     organized_count = 0
@@ -342,15 +376,19 @@ elif page == "📁 Organizar Archivos":
                                     category = cat
                                     break
 
-                            # Guardar referencia del archivo
+                            # Copiar archivo a carpeta persistente
+                            dest_path = ORGANIZED_DIR / category / file_path.name
+                            if not dest_path.exists():
+                                shutil.copy2(file_path, dest_path)
+
                             organized_files[category].append({
-                                "path": file_path,
+                                "path": dest_path,
                                 "name": file_path.name,
-                                "size": file_path.stat().st_size
+                                "size": dest_path.stat().st_size
                             })
                             organized_count += 1
 
-                    st.success(f"✅ {organized_count} archivo(s) organizados correctamente")
+                    st.success(f"✅ {organized_count} archivo(s) organizados y guardados")
 
                     # Mostrar estructura
                     st.markdown("### 📂 Estructura creada:")
@@ -362,7 +400,7 @@ elif page == "📁 Organizar Archivos":
                                 size_kb = f["size"] / 1024
                                 st.markdown(f"  - {f['name']} ({size_kb:.1f} KB)")
 
-                    # Guardar en session state para descarga
+                    # Guardar en session state
                     st.session_state.organized_files = organized_files
                     st.session_state.organized_count = organized_count
 
@@ -378,7 +416,6 @@ elif page == "📁 Organizar Archivos":
                         for category, files in organized_files.items():
                             for file_info in files:
                                 file_path = file_info["path"]
-                                # Guardar con estructura: categoria/archivo
                                 arcname = f"{category}/{file_info['name']}"
                                 zip_file.write(file_path, arcname=arcname)
 
@@ -392,7 +429,7 @@ elif page == "📁 Organizar Archivos":
                         type="primary"
                     )
 
-                    st.info("✨ Los archivos han sido organizados. Continúa con el siguiente paso.")
+                    st.info("✨ Los archivos han sido organizados y guardados. Continúa con el siguiente paso.")
 
                 except Exception as e:
                     st.error(f"❌ Error al organizar: {e}")
@@ -408,6 +445,10 @@ elif page == "📁 Organizar Archivos":
 
 elif page == "🔐 Redactar Datos":
     st.markdown("## 🔐 Redactar Datos Sensibles")
+
+    # Crear directorio persistente si no existe
+    ORGANIZED_DIR = Path("organized_files")
+    ORGANIZED_DIR.mkdir(exist_ok=True)
 
     st.markdown("""
     <div class="warning-box">
@@ -428,12 +469,58 @@ elif page == "🔐 Redactar Datos":
 
     st.markdown("---")
 
-    # Upload de archivo - TXT y PDF
-    uploaded_file = st.file_uploader(
-        "📤 Carga un archivo para redactar",
+    # Recolectar todos los archivos organizados
+    available_files = {}
+    for category_dir in sorted(ORGANIZED_DIR.iterdir()):
+        if category_dir.is_dir():
+            for file_path in sorted(category_dir.glob("*")):
+                if file_path.is_file():
+                    display_name = f"{category_dir.name} / {file_path.name}"
+                    available_files[display_name] = file_path
+
+    # Opción 1: Seleccionar de archivos organizados
+    if available_files:
+        st.markdown("### 📂 Opción 1: Seleccionar de Archivos Organizados")
+        selected_file = st.selectbox(
+            "Elige un archivo para redactar:",
+            options=available_files.keys(),
+            key="select_organized_file"
+        )
+
+        if st.button("📖 Cargar Archivo Seleccionado", key="load_organized_btn", type="primary"):
+            uploaded_file = available_files[selected_file]
+            # Leer el archivo seleccionado
+            with open(uploaded_file, 'rb') as f:
+                file_content = f.read()
+
+            # Crear un objeto tipo file para compatibilidad
+            class FileObj:
+                def __init__(self, name, content):
+                    self.name = name
+                    self.size = len(content)
+                    self._content = content
+
+                def read(self):
+                    return self._content
+
+            uploaded_file = FileObj(uploaded_file.name, file_content)
+            st.session_state.loaded_file = uploaded_file
+            st.success(f"✅ Archivo cargado: {selected_file}")
+
+        st.markdown("---")
+        st.markdown("### 📤 Opción 2: Cargar Nuevo Archivo")
+    else:
+        st.info("📭 No hay archivos organizados. Primero organiza archivos en la sección anterior.")
+
+    # Upload de archivo nuevo
+    uploaded_file_new = st.file_uploader(
+        "📤 O carga un nuevo archivo para redactar",
         type=["txt", "pdf"],
         key="redact_upload"
     )
+
+    # Usar archivo cargado (ya sea del selectbox o del uploader)
+    uploaded_file = st.session_state.get("loaded_file") or uploaded_file_new
 
     if uploaded_file:
         st.markdown("### Archivo cargado:")

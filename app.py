@@ -471,8 +471,32 @@ elif page == "🔐 Redactar Datos":
                     if not content.strip():
                         st.warning("⚠️ El archivo está vacío o no se puede extraer texto")
                     else:
-                        # Redactar
                         processor = st.session_state.processor
+
+                        # Detectar datos sensibles ANTES de redactar
+                        st.markdown("### 🔍 Datos Sensibles Detectados:")
+                        findings = processor.detect_sensitive_data(content)
+
+                        if findings:
+                            import pandas as pd
+                            df = pd.DataFrame(findings)
+                            st.dataframe(
+                                df,
+                                use_container_width=True,
+                                hide_index=True,
+                                column_config={
+                                    "tipo": st.column_config.TextColumn("Tipo de Dato"),
+                                    "valor_original": st.column_config.TextColumn("Valor Original"),
+                                    "posicion": st.column_config.TextColumn("Posición")
+                                }
+                            )
+                            st.info(f"📊 Se encontraron **{len(findings)}** datos sensibles")
+                        else:
+                            st.info("✅ No se detectaron datos sensibles")
+
+                        st.markdown("---")
+
+                        # Redactar
                         redacted_content = processor.redact_text(content)
 
                         # Contar redacciones

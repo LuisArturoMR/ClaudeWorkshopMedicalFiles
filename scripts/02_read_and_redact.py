@@ -13,22 +13,21 @@ class LocalDataProcessor:
 
     def __init__(self):
         # Mapeo de redacción: datos reales → placeholders seguros
+        # Orden importa - patrones más específicos primero
         self.redaction_map = {
-            # Nombres (ejemplo - personalizar)
-            r"Juan\s+García": "[PATIENT_NAME]",
-            r"María\s+García": "[CAREGIVER_NAME]",
+            # Números de seguridad social (SSN: XXX-XX-XXXX)
+            r"\b\d{3}-\d{2}-\d{4}\b": "[SSN_REDACTED]",
 
-            # Números de seguridad social
-            r"\d{3}-\d{2}-\d{4}": "[SSN_REDACTED]",
+            # Fechas de nacimiento (MM/DD/YYYY o YYYY-MM-DD)
+            r"\b(?:0[1-9]|1[0-2])/(?:0[1-9]|[12]\d|3[01])/(?:19|20)\d{2}\b": "[DOB]",
+            r"\b(?:19|20)\d{2}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])\b": "[DOB]",
 
-            # Números de póliza (ejemplo)
-            r"BCBS-\d+": "[POLICY_ID]",
-            r"AETNA-\d+": "[POLICY_ID]",
-            r"UNI-\d+": "[POLICY_ID]",
+            # Números de póliza (formatos comunes)
+            r"\b[A-Z]{2,4}-\d{6,8}\b": "[POLICY_ID]",
+            r"\b(?:BCBS|AETNA|UNI|CIGNA|BLUE|UNITED|HUMANA)-\d+\b": "[POLICY_ID]",
 
-            # Fechas de nacimiento
-            r"(?:0[1-9]|1[0-2])/(?:0[1-9]|[12]\d|3[01])/(?:19|20)\d{2}": "[DOB]",
-            r"(?:19|20)\d{2}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])": "[DOB]",
+            # Nombres (patrones: Nombre Apellido)
+            r"\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+\b": "[PATIENT_NAME]",
         }
 
     def read_file_locally(self, filepath):
@@ -45,6 +44,21 @@ class LocalDataProcessor:
         except Exception as e:
             print(f"❌ Error leyendo {filepath}: {e}")
             return None
+
+    def detect_sensitive_data(self, text):
+        """Detecta datos sensibles sin redactarlos - devuelve tabla"""
+        findings = []
+
+        for pattern, data_type in self.redaction_map.items():
+            matches = re.finditer(pattern, text, flags=re.IGNORECASE)
+            for match in matches:
+                findings.append({
+                    "tipo": data_type.replace("[", "").replace("]", ""),
+                    "valor_original": match.group(),
+                    "posicion": f"Car. {match.start()}-{match.end()}"
+                })
+
+        return findings
 
     def redact_text(self, text):
         """Redacta datos sensibles automáticamente"""

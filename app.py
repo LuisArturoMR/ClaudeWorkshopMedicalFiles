@@ -319,10 +319,6 @@ elif page == "📁 Organizar Archivos":
         if st.button("🚀 Organizar Archivos", key="organize_btn", type="primary"):
             with st.spinner("Organizando archivos..."):
                 try:
-                    # Crear carpetas de destino
-                    temp_organized = Path(st.session_state.temp_dir) / "organized"
-                    temp_organized.mkdir(exist_ok=True)
-
                     # Categorías
                     categories = {
                         "Polizas": ["póliza", "policy", "cobertura", "plan"],
@@ -332,12 +328,11 @@ elif page == "📁 Organizar Archivos":
                         "Medicamentos": ["medicamento", "medicina", "prescripción"],
                     }
 
-                    # Crear carpetas y organizar
-                    for category in categories:
-                        (temp_organized / category).mkdir(exist_ok=True)
+                    # Estructura en memoria para guardar referencias
+                    organized_files = {cat: [] for cat in list(categories.keys()) + ["Otros"]}
 
                     organized_count = 0
-                    for file_path in temp_raw.glob("*"):
+                    for file_path in sorted(temp_raw.glob("*")):
                         if file_path.is_file():
                             category = "Otros"
                             filename_lower = file_path.name.lower()
@@ -347,29 +342,62 @@ elif page == "📁 Organizar Archivos":
                                     category = cat
                                     break
 
-                            # Copiar archivo
-                            dest_path = temp_organized / category / file_path.name
-                            shutil.copy2(file_path, dest_path)
+                            # Guardar referencia del archivo
+                            organized_files[category].append({
+                                "path": file_path,
+                                "name": file_path.name,
+                                "size": file_path.stat().st_size
+                            })
                             organized_count += 1
 
                     st.success(f"✅ {organized_count} archivo(s) organizados correctamente")
 
                     # Mostrar estructura
                     st.markdown("### 📂 Estructura creada:")
-                    for category in categories:
-                        cat_path = temp_organized / category
-                        files = list(cat_path.glob("*"))
+                    for category in list(categories.keys()) + ["Otros"]:
+                        files = organized_files[category]
                         if files:
                             st.markdown(f"**{category}/** ({len(files)} archivo(s))")
                             for f in files:
-                                st.markdown(f"  - {f.name}")
+                                size_kb = f["size"] / 1024
+                                st.markdown(f"  - {f['name']} ({size_kb:.1f} KB)")
+
+                    # Guardar en session state para descarga
+                    st.session_state.organized_files = organized_files
+                    st.session_state.organized_count = organized_count
 
                     # Botón de descarga
                     st.markdown("---")
+
+                    # Crear ZIP con archivos organizados
+                    import zipfile
+                    import io
+
+                    zip_buffer = io.BytesIO()
+                    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+                        for category, files in organized_files.items():
+                            for file_info in files:
+                                file_path = file_info["path"]
+                                # Guardar con estructura: categoria/archivo
+                                arcname = f"{category}/{file_info['name']}"
+                                zip_file.write(file_path, arcname=arcname)
+
+                    zip_buffer.seek(0)
+
+                    st.download_button(
+                        label="📥 Descargar archivos organizados (ZIP)",
+                        data=zip_buffer.getvalue(),
+                        file_name=f"archivos_organizados_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip",
+                        mime="application/zip",
+                        type="primary"
+                    )
+
                     st.info("✨ Los archivos han sido organizados. Continúa con el siguiente paso.")
 
                 except Exception as e:
                     st.error(f"❌ Error al organizar: {e}")
+                    import traceback
+                    st.error(f"Detalles: {traceback.format_exc()}")
 
     else:
         st.info("👆 Carga archivos para comenzar")

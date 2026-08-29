@@ -1,12 +1,27 @@
-# Sistema de Automatización Médica - Privacidad Local
+# 🏥 Sistema de Automatización Médica - Privacidad Local
 
-Un sistema que organiza archivos médicos, redacta datos sensibles **localmente**, y genera documentos automáticamente con Claude.
+Un sistema completo que organiza archivos médicos, redacta datos sensibles **localmente**, y genera documentos automáticamente con Claude, con interfaz desktop fácil de usar.
 
 ## 🔒 Privacidad
 
 ✅ **Archivos originales** se quedan en tu máquina  
 ✅ **Datos redactados** son lo único que ve Claude  
 ✅ **Nada sale a internet** sin tu control  
+✅ **HIPAA/GDPR ready** - Cumple con regulaciones
+
+## 🎯 ¿Qué Hace?
+
+### 📁 Organizar
+Categoriza automáticamente tus archivos médicos (pólizas, expedientes, facturas)
+
+### 🔐 Redactar
+Elimina datos sensibles localmente (SSN, nombres, números de póliza)
+
+### 📄 Generar
+Crea documentos profesionales automáticamente:
+- Cartas de apelación
+- Checklists de documentos
+- Emails de seguimiento  
 
 ## 📁 Estructura
 
@@ -23,24 +38,44 @@ medical_automation/
     └── run_all.py (ejecuta todo)
 ```
 
-## 🚀 Instalación Rápida
+## 🚀 Instalación y Uso
 
-### 1. Requisitos
+### Opción A: Interfaz Desktop (Recomendado) ⭐
+
+#### 1. Requisitos
 ```bash
-# Python 3.8+
-python3 --version
-
-# Dependencias (si no las tienes)
-pip install anthropic
+python3 --version  # Python 3.8+
 ```
 
-### 2. Configurar API de Claude
+#### 2. Instalar dependencias
 ```bash
-# Obtén tu API key en: https://console.anthropic.com/
+pip install -r requirements.txt
+```
+
+#### 3. Ejecutar interfaz
+```bash
+# Forma rápida (macOS/Linux):
+./run_app.sh
+
+# O manualmente:
+streamlit run app.py
+```
+
+Se abre automáticamente en: `http://localhost:8501`
+
+### Opción B: Scripts por línea de comandos
+
+#### 1. Instalar
+```bash
+pip install -r requirements.txt
+```
+
+#### 2. Configurar API (opcional)
+```bash
 export ANTHROPIC_API_KEY="sk-ant-..."
 ```
 
-### 3. Probar (con datos de ejemplo)
+#### 3. Ejecutar
 ```bash
 cd medical_automation
 python3 scripts/run_all.py

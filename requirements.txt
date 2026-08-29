@@ -3,5 +3,8 @@
 # Claude API
 anthropic>=0.25.0
 
+# Interfaz Desktop
+streamlit>=1.28.0
+
 # Herramientas opcionales
 python-dotenv>=1.0.0  # Para cargar .env

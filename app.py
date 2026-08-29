@@ -63,22 +63,73 @@ except Exception as e:
 # ════════════════════════════════════════════════════════════════════════════
 
 st.set_page_config(
-    page_title="🏥 Sistema Médico - Automatización",
-    page_icon="🏥",
+    page_title="CustodIA - Automatización Médica",
+    page_icon="📋",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# CSS personalizado
+# CSS personalizado - Diseño tipo CustodIA
 st.markdown("""
 <style>
+    :root {
+        --primary-color: #1a7a7a;
+        --secondary-color: #2a9d9d;
+        --light-bg: #f5f5f5;
+        --text-dark: #1f1f1f;
+    }
+
     .main {
-        padding: 0rem 1rem;
+        padding: 0rem;
     }
-    .stTabs [data-baseweb="tab-list"] button [data-testid="stMarkdownContainer"] p {
-        font-size: 1.2rem;
-        font-weight: bold;
+
+    /* Sidebar */
+    [data-testid="stSidebar"] {
+        background-color: #ffffff;
+        border-right: 1px solid #e0e0e0;
     }
+
+    [data-testid="stSidebar"] > div:first-child {
+        padding-top: 1rem;
+    }
+
+    /* Logo container */
+    .logo-container {
+        text-align: center;
+        padding: 1.5rem 0;
+        margin-bottom: 2rem;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .logo-container img {
+        max-width: 180px;
+        height: auto;
+    }
+
+    /* Sidebar menu items */
+    [data-testid="stSidebar"] .stRadio > label {
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 0.5rem;
+        transition: all 0.2s;
+    }
+
+    [data-testid="stSidebar"] .stRadio > label:hover {
+        background-color: #f0f0f0;
+    }
+
+    /* Section headers */
+    .section-header {
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 1px;
+        color: #999;
+        text-transform: uppercase;
+        margin: 1.5rem 0 1rem 0;
+        padding-left: 1rem;
+    }
+
+    /* Success box */
     .success-box {
         padding: 1rem;
         border-radius: 0.5rem;
@@ -86,6 +137,7 @@ st.markdown("""
         border-left: 4px solid #198754;
         margin: 1rem 0;
     }
+
     .info-box {
         padding: 1rem;
         border-radius: 0.5rem;
@@ -93,12 +145,79 @@ st.markdown("""
         border-left: 4px solid #0d6efd;
         margin: 1rem 0;
     }
+
     .warning-box {
         padding: 1rem;
         border-radius: 0.5rem;
         background-color: #fff3cd;
         border-left: 4px solid #ffc107;
         margin: 1rem 0;
+    }
+
+    /* Feature cards */
+    .feature-card {
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        margin: 1rem 0;
+        transition: all 0.3s;
+    }
+
+    .feature-card:hover {
+        border-color: #1a7a7a;
+        box-shadow: 0 2px 8px rgba(26, 122, 122, 0.1);
+    }
+
+    .feature-number {
+        color: #1a7a7a;
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+
+    .feature-title {
+        color: #1f1f1f;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .feature-description {
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    /* Main title */
+    .main-title {
+        color: #1f1f1f;
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin: 1rem 0;
+        line-height: 1.2;
+    }
+
+    .main-subtitle {
+        color: #1a7a7a;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] button [data-testid="stMarkdownContainer"] p {
+        font-size: 1rem;
+        font-weight: 600;
+    }
+
+    .stTabs [data-baseweb="tab-list"] button {
+        border-bottom: 2px solid transparent;
+    }
+
+    .stTabs [data-baseweb="tab-list"] button[aria-selected="true"] {
+        border-bottom-color: #1a7a7a;
+        color: #1a7a7a;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -117,154 +236,162 @@ if "generator" not in st.session_state:
     st.session_state.generator = ClaudeDocumentGenerator()
 
 # ════════════════════════════════════════════════════════════════════════════
-# TÍTULO PRINCIPAL
+# SIDEBAR - NAVEGACIÓN (Diseño CustodIA)
 # ════════════════════════════════════════════════════════════════════════════
 
-col1, col2, col3 = st.columns([1, 2, 1])
-with col2:
-    st.title("🏥 Sistema de Automatización Médica")
-    st.markdown("---")
-    st.markdown("""
-    <div class="info-box">
-    <strong>✅ Privacidad Garantizada:</strong> Todos los datos se procesan localmente en tu máquina.
-    Solo datos redactados van a Claude. Nunca se envía información sensible a internet.
-    </div>
-    """, unsafe_allow_html=True)
+# Logo en sidebar
+st.sidebar.markdown("""
+<div class="logo-container">
+    <img src="app/static/logo.jpeg" alt="CustodIA" style="max-width: 160px;">
+</div>
+""", unsafe_allow_html=True)
 
-# ════════════════════════════════════════════════════════════════════════════
-# SIDEBAR - NAVEGACIÓN
-# ════════════════════════════════════════════════════════════════════════════
-
-st.sidebar.markdown("---")
-st.sidebar.markdown("## 📋 Navegación")
-st.sidebar.markdown("---")
+# Navegación principal
+st.sidebar.markdown('<div class="section-header">Espacio de Trabajo</div>', unsafe_allow_html=True)
 
 page = st.sidebar.radio(
     "Selecciona una opción:",
     ["🏠 Inicio", "📁 Organizar Archivos", "🔐 Redactar Datos", "🤖 Automatizaciones"],
-    key="page_selector"
+    key="page_selector",
+    label_visibility="collapsed"
 )
 
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 📚 Información")
-with st.sidebar.expander("ℹ️ Cómo usar", expanded=False):
+# Información
+st.sidebar.markdown('<div class="section-header">Información</div>', unsafe_allow_html=True)
+
+with st.sidebar.expander("❓ Cómo usar", expanded=False):
     st.markdown("""
     **1️⃣ Organizar:** Carga tus archivos y categorízalos automáticamente
 
     **2️⃣ Redactar:** Elimina datos sensibles (SSN, nombres, números de póliza)
 
-    **3️⃣ Generar:** Crea documentos profesionales con Claude
+    **3️⃣ Automatizar:** Genera documentos o chatea con Claude
 
     ---
 
-    **Datos sensibles que se redactan:**
-    - SSN (123-45-6789)
-    - Nombres
+    **Datos que protegemos:**
+    - SSN y Seguro Social
+    - Nombres y documentos
     - Números de póliza
-    - Fechas de nacimiento
+    - Información bancaria
     """)
 
-with st.sidebar.expander("🔒 Seguridad", expanded=False):
+with st.sidebar.expander("🔐 Seguridad", expanded=False):
     st.markdown("""
-    ✅ Datos locales - nunca salen de tu máquina
+    ✅ **Procesamiento local** - Datos nunca salen de tu máquina
 
-    ✅ Redacción automática de PII (Personally Identifiable Information)
+    ✅ **Redacción automática** - Reemplaza PHI/PII con tokens
 
-    ✅ Solo datos redactados van a Claude API
+    ✅ **Solo datos seguros** - Solo redactados van a Claude
 
-    ✅ HIPAA/GDPR compliant
+    ✅ **Cumplimiento** - HIPAA, GDPR compatible
     """)
+
+# Indicador de procesamiento local
+st.sidebar.markdown("---")
+st.sidebar.markdown("""
+<div style="padding: 1rem; background-color: #f0f0f0; border-radius: 0.5rem; margin-top: 2rem;">
+    <div style="color: #1a7a7a; font-weight: 600; margin-bottom: 0.5rem;">
+        ✓ PROCESAMIENTO LOCAL
+    </div>
+    <div style="font-size: 0.85rem; color: #666;">
+        Tus archivos nunca salen de este dispositivo.
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+# ════════════════════════════════════════════════════════════════════════════
+# TÍTULO PRINCIPAL
+# ════════════════════════════════════════════════════════════════════════════
+
+# Espacio en blanco para que no quede pegado al sidebar
+st.markdown("---")
 
 # ════════════════════════════════════════════════════════════════════════════
 # PÁGINA: INICIO
 # ════════════════════════════════════════════════════════════════════════════
 
 if page == "🏠 Inicio":
-    st.markdown("## ¡Bienvenido!")
+    st.markdown("""
+    <div class="main-subtitle">CONFIANZA Y PRIVACIDAD</div>
+    <div class="main-title">Seguridad sin concesiones.</div>
+    """, unsafe_allow_html=True)
 
-    col1, col2 = st.columns(2)
+    st.markdown("""
+    Diseñado para mantener el control de la información clínica donde pertenece:
+    contigo.
+    """)
+
+    st.markdown("---")
+
+    # Características principales
+    st.markdown("## ¿Cómo funciona?")
+
+    col1, col2 = st.columns([1, 1])
 
     with col1:
         st.markdown("""
-        ### ✨ Funcionalidades
+        <div class="feature-card">
+            <div class="feature-number">01</div>
+            <div class="feature-title">Procesamiento estrictamente local</div>
+            <div class="feature-description">
+            Una capa de protección clara y verificable, pensada para documentación sensible.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-        **Organizar Archivos**
-        - Categoriza automáticamente tus documentos médicos
-        - Pólizas, Expedientes, Facturas, etc.
+        st.markdown("""
+        <div class="feature-card">
+            <div class="feature-number">02</div>
+            <div class="feature-title">Redacción antes de cualquier generación</div>
+            <div class="feature-description">
+            Una capa de protección clara y verificable, pensada para documentación sensible.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-        **Redactar Datos**
-        - Elimina datos sensibles localmente
-        - Protege privacidad de tu familia
-        - 100% seguro en tu máquina
+    with col2:
+        st.markdown("""
+        <div class="feature-card">
+            <div class="feature-number">03</div>
+            <div class="feature-title">Zero data retention en integraciones empresariales</div>
+            <div class="feature-description">
+            Una capa de protección clara y verificable, pensada para documentación sensible.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-        **Generar Documentos**
-        - Crea cartas de apelación profesionales
-        - Genera checklists de documentos
-        - Crea emails de seguimiento
+        st.markdown("""
+        <div class="feature-card">
+            <div class="feature-number">04</div>
+            <div class="feature-title">Cifrado durante las transferencias autorizadas</div>
+            <div class="feature-description">
+            Una capa de protección clara y verificable, pensada para documentación sensible.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("---")
+    st.markdown("## 🚀 Cómo empezar")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.markdown("""
+        ### 📁 Paso 1: Organizar
+        Carga tus documentos médicos y el sistema los categoriza automáticamente.
         """)
 
     with col2:
         st.markdown("""
-        ### 🔒 Privacidad
-
-        Tu privacidad es lo primero:
-        - ✅ Datos originales nunca salen de tu máquina
-        - ✅ Redacción automática de información personal
-        - ✅ Solo datos redactados van a Claude
-        - ✅ Con Anthropic Enterprise: Zero Data Retention
-
-        **Datos que redactamos:**
-        - Números de Seguro Social
-        - Nombres completos
-        - Números de póliza de seguros
-        - Fechas de nacimiento
-        - Información médica identificable
+        ### 🔐 Paso 2: Redactar
+        Elimina automáticamente datos sensibles (SSN, nombres, pólizas).
         """)
 
-    st.markdown("---")
-
-    st.markdown("### 🚀 Cómo empezar")
-
-    tab1, tab2, tab3 = st.tabs(["📁 Paso 1: Organizar", "🔐 Paso 2: Redactar", "📄 Paso 3: Generar"])
-
-    with tab1:
+    with col3:
         st.markdown("""
-        **1. Ve a la sección "Organizar Archivos"**
-
-        2. Carga tus archivos médicos (expedientes, facturas, pólizas, etc.)
-
-        3. El sistema los organizará automáticamente por categoría
-
-        4. Descarga los archivos organizados
-        """)
-
-    with tab2:
-        st.markdown("""
-        **1. Ve a la sección "Redactar Datos"**
-
-        2. Carga un archivo con datos sensibles
-
-        3. El sistema automáticamente:
-           - Redacta números de SSN
-           - Redacta nombres
-           - Redacta números de póliza
-           - Redacta fechas de nacimiento
-
-        4. Descarga el archivo redactado (seguro para compartir)
-        """)
-
-    with tab3:
-        st.markdown("""
-        **1. Ve a la sección "Generar Documentos"**
-
-        2. Sube archivos redactados
-
-        3. El sistema genera:
-           - 📧 Cartas de apelación profesionales
-           - ✅ Checklists de documentos necesarios
-           - 💬 Emails de seguimiento
-
-        4. Descarga los documentos generados
+        ### 🤖 Paso 3: Automatizar
+        Genera documentos o chatea con Claude usando solo datos redactados.
         """)
 
 # ════════════════════════════════════════════════════════════════════════════

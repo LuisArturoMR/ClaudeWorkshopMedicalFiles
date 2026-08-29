@@ -107,10 +107,21 @@ st.markdown("""
         border-radius: 0.5rem;
         margin-bottom: 0.5rem;
         transition: all 0.2s;
+        color: #1f1f1f !important;
     }
 
     [data-testid="stSidebar"] .stRadio > label:hover {
         background-color: #f0f0f0;
+        color: #1f1f1f !important;
+    }
+
+    /* Sidebar text color */
+    [data-testid="stSidebar"] {
+        color: #1f1f1f !important;
+    }
+
+    [data-testid="stSidebar"] span {
+        color: #1f1f1f !important;
     }
 
     /* Section headers */

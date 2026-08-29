@@ -96,14 +96,9 @@ st.markdown("""
     /* Logo container */
     .logo-container {
         text-align: center;
-        padding: 1.5rem 0;
-        margin-bottom: 2rem;
+        padding: 1rem 0;
+        margin-bottom: 1.5rem;
         border-bottom: 1px solid #e0e0e0;
-    }
-
-    .logo-container img {
-        max-width: 180px;
-        height: auto;
     }
 
     /* Sidebar menu items */
@@ -239,12 +234,13 @@ if "generator" not in st.session_state:
 # SIDEBAR - NAVEGACIÓN (Diseño CustodIA)
 # ════════════════════════════════════════════════════════════════════════════
 
-# Logo en sidebar
-st.sidebar.markdown("""
-<div class="logo-container">
-    <img src="app/static/logo.jpeg" alt="CustodIA" style="max-width: 160px;">
-</div>
-""", unsafe_allow_html=True)
+# Logo en sidebar - Usar ruta correcta
+from PIL import Image
+try:
+    logo = Image.open("logo.jpeg")
+    st.sidebar.image(logo, use_column_width=True)
+except:
+    st.sidebar.markdown("### 📋 CustodIA")
 
 # Navegación principal
 st.sidebar.markdown('<div class="section-header">Espacio de Trabajo</div>', unsafe_allow_html=True)
@@ -312,14 +308,11 @@ st.markdown("---")
 # ════════════════════════════════════════════════════════════════════════════
 
 if page == "🏠 Inicio":
+    # Título y descripción
+    st.markdown("### CONFIANZA Y PRIVACIDAD")
+    st.markdown("# Seguridad sin concesiones")
     st.markdown("""
-    <div class="main-subtitle">CONFIANZA Y PRIVACIDAD</div>
-    <div class="main-title">Seguridad sin concesiones.</div>
-    """, unsafe_allow_html=True)
-
-    st.markdown("""
-    Diseñado para mantener el control de la información clínica donde pertenece:
-    contigo.
+    Diseñado para mantener el control de la información clínica donde pertenece: contigo.
     """)
 
     st.markdown("---")
@@ -327,7 +320,8 @@ if page == "🏠 Inicio":
     # Características principales
     st.markdown("## ¿Cómo funciona?")
 
-    col1, col2 = st.columns([1, 1])
+    # Usar 2 columnas para las 4 tarjetas
+    col1, col2 = st.columns(2)
 
     with col1:
         st.markdown("""
@@ -378,19 +372,22 @@ if page == "🏠 Inicio":
 
     with col1:
         st.markdown("""
-        ### 📁 Paso 1: Organizar
+        **📁 Paso 1: Organizar**
+
         Carga tus documentos médicos y el sistema los categoriza automáticamente.
         """)
 
     with col2:
         st.markdown("""
-        ### 🔐 Paso 2: Redactar
+        **🔐 Paso 2: Redactar**
+
         Elimina automáticamente datos sensibles (SSN, nombres, pólizas).
         """)
 
     with col3:
         st.markdown("""
-        ### 🤖 Paso 3: Automatizar
+        **🤖 Paso 3: Automatizar**
+
         Genera documentos o chatea con Claude usando solo datos redactados.
         """)
 

@@ -496,42 +496,67 @@ elif page == "🔐 Redactar Datos":
 
                         st.markdown("---")
 
-                        # Redactar
-                        redacted_content = processor.redact_text(content)
+                        # Tokenizar (crear tokens [[LABEL#NNNN]])
+                        mutilated_content = processor.tokenize_text(content)
 
-                        # Contar redacciones
-                        import re
-                        redactions = len(re.findall(r'\[.*?_REDACTED\]', redacted_content))
+                        # Mostrar texto "mutilado"
+                        st.markdown("### 📝 Texto Mutilado (para Claude):")
+                        st.code(mutilated_content if mutilated_content else "(vacío)", language="text")
 
-                        st.success(f"✅ Archivo redactado correctamente ({redactions} datos sensibles eliminados)")
+                        # Mostrar tabla de tokens
+                        tokens = processor.vault.get_all_tokens()
+                        if tokens:
+                            st.markdown("### 🔐 Inventario de Tokens:")
+                            import pandas as pd
+                            tokens_df = pd.DataFrame(tokens)
+                            st.dataframe(
+                                tokens_df,
+                                use_container_width=True,
+                                hide_index=True,
+                                column_config={
+                                    "token": st.column_config.TextColumn("Token", width="medium"),
+                                    "tipo": st.column_config.TextColumn("Tipo"),
+                                    "valor_original": st.column_config.TextColumn("Valor Original")
+                                }
+                            )
+
+                        st.success(f"✅ Archivo tokenizado ({len(tokens)} tokens generados)")
 
                         st.markdown("---")
 
-                        # Mostrar preview
-                        st.markdown("### 📄 Vista previa del archivo redactado:")
-                        st.text_area(
-                            "Contenido redactado:",
-                            redacted_content,
-                            height=300,
-                            disabled=True
-                        )
+                        # Botón para "Revelar" (rehydrate) - mostrar valores originales
+                        if tokens and st.button("🔍 Revelar Valores Originales", key="reveal_btn"):
+                            st.warning("⚠️ PHI en claro - visible solo en esta sesión de RAM")
+                            revealed = []
+                            for token_info in tokens:
+                                revealed.append({
+                                    "Token": token_info["token"],
+                                    "Tipo": token_info["tipo"],
+                                    "Valor Original": token_info["valor_original"]
+                                })
+                            import pandas as pd
+                            st.dataframe(
+                                pd.DataFrame(revealed),
+                                use_container_width=True,
+                                hide_index=True
+                            )
 
                         st.markdown("---")
 
-                        # Botón de descarga - siempre como .txt
+                        # Botón de descarga - archivo mutilado como .txt
                         base_name = uploaded_file.name.rsplit('.', 1)[0]
                         st.download_button(
-                            label="📥 Descargar archivo redactado (.txt)",
-                            data=redacted_content,
-                            file_name=f"redactado_{base_name}.txt",
+                            label="📥 Descargar archivo mutilado (.txt)",
+                            data=mutilated_content,
+                            file_name=f"mutilado_{base_name}.txt",
                             mime="text/plain",
                             type="primary"
                         )
 
                         st.markdown("""
                         <div class="success-box">
-                        <strong>✨ Listo para el siguiente paso:</strong> Este archivo redactado es seguro
-                        para enviar a Claude o compartir con otros.
+                        <strong>✨ Listo para el siguiente paso:</strong> Este archivo con tokens
+                        es seguro para enviar a Claude. Los datos originales quedan solo en esta sesión de RAM.
                         </div>
                         """, unsafe_allow_html=True)
 

@@ -2,7 +2,7 @@
 """
 Lee archivos sensibles LOCALMENTE y genera versión redactada para Claude
 Los datos originales NUNCA salen de tu máquina
-Tokenización inspirada en HMRE Sovereign Engine: tokens [[LABEL#NNNN]]
+Tokenización + Reglas de detección PHI/PII del HMRE Sovereign Engine
 """
 
 import re
@@ -68,45 +68,114 @@ class TokenVault:
         return TOKEN_RE.sub(replace, result)
 
 
+class SanitizationRule:
+    """Una regla de detección de PHI/PII"""
+
+    def __init__(self, label: str, pattern: str, group: int = 0, flags: int = 0):
+        self.label = label
+        self.pattern = re.compile(pattern, flags)
+        self.group = group
+
+    def scan(self, text: str) -> List[Tuple[int, int, str]]:
+        """Retorna lista de (start, end, value) para matches"""
+        findings = []
+        for match in self.pattern.finditer(text):
+            start, end = match.span(self.group)
+            if start >= 0 and end > start:
+                findings.append((start, end, match.group(self.group)))
+        return findings
+
+
 class LocalDataProcessor:
-    """Procesa datos médicos localmente con tokenización"""
+    """Procesa datos médicos con reglas de detección HMRE"""
 
     def __init__(self):
         self.vault = TokenVault()
 
-        # Reglas de detección: (label, pattern, flags)
+        # Patrones de texto para nombres (con acentos mexicanos)
+        _WORD = r"[A-ZÁÉÍÓÚÑ][A-Za-zÁÉÍÓÚÑáéíóúñ''.-]*"
+        _CONNECTOR = r"(?:de|del|la|las|los|y)"
+        _NAME = r"{w}(?:[ ]+(?:{c}[ ]+)?{w}){{0,4}}".format(w=_WORD, c=_CONNECTOR)
+
+        # Estados mexicanos
+        _MX_STATES = (
+            "AS|BC|BS|CC|CH|CL|CM|CS|DF|DG|GR|GT|HG|JC|MC|MN|MS|"
+            "NE|NL|OC|PL|QR|QT|SL|SP|SR|TC|TL|TS|VZ|YN|ZS"
+        )
+
+        # Reglas de detección (ordenadas por especificidad - CURP antes que RFC)
         self.rules = [
-            # Números de seguridad social
-            ("SSN", r"\b\d{3}-\d{2}-\d{4}\b", re.IGNORECASE),
+            # CURP: 18 caracteres exactos, formato mexicano
+            SanitizationRule(
+                "CURP",
+                r"\b[A-Z][AEIOUX][A-Z]{2}\d{6}[HM](?:" + _MX_STATES + r")"
+                r"[B-DF-HJ-NP-TV-Z]{3}[A-Z0-9]\d\b",
+            ),
 
-            # Fechas de nacimiento
-            ("DOB", r"\b(?:0[1-9]|1[0-2])/(?:0[1-9]|[12]\d|3[01])/(?:19|20)\d{2}\b", re.IGNORECASE),
-            ("DOB", r"\b(?:19|20)\d{2}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])\b", re.IGNORECASE),
+            # RFC: Tax ID mexicano (11-13 caracteres)
+            SanitizationRule("RFC", r"\b[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}\b"),
 
-            # Números de póliza
-            ("POLIZA", r"\b(?:póliza|policy|certificado)\s*(?:nú?m|no|#)?\s*[:\-]?\s*([A-Z0-9][A-Z0-9\-/]{5,23})\b", re.IGNORECASE),
-            ("POLIZA", r"\b[A-Z]{2,4}-\d{6,8}\b", re.IGNORECASE),
+            # NSS: Seguro Social Mexicano (11 dígitos)
+            SanitizationRule(
+                "NSS",
+                r"(?:NSS|N\.?S\.?S\.?|Seguro\s+Social|IMSS)\s*[:#-]?\s*(\d{11})\b",
+                group=1,
+                flags=re.IGNORECASE,
+            ),
 
-            # Nombres (patrones: Nombre Apellido - capitalizado)
-            ("PACIENTE", r"\b[A-Z][a-záéíóú]+(?:\s+[A-Z][a-záéíóú]+)+\b", re.IGNORECASE),
+            # POLIZA: Números de póliza (variaciones)
+            SanitizationRule(
+                "POLIZA",
+                r"(?:p[oó]liza|policy|certificado)\s*(?:n[uú]m(?:ero)?\.?|no\.?|#|:)?\s*"
+                r"([A-Z0-9][A-Z0-9\-/]{5,23})",
+                group=1,
+                flags=re.IGNORECASE,
+            ),
+
+            # CLABE: Cuenta bancaria mexicana (18 dígitos exactos)
+            SanitizationRule("CLABE", r"\b\d{18}\b"),
+
+            # PAN: Tarjeta de crédito
+            SanitizationRule("PAN", r"\b(?:\d{4}[ -]){3}\d{4}\b"),
+
+            # EMAIL: Correos electrónicos
+            SanitizationRule("EMAIL", r"\b[\w.+-]+@[\w-]+\.[\w.-]+\b"),
+
+            # PHONE: Teléfono (incluyendo formato mexicano +52)
+            SanitizationRule(
+                "PHONE",
+                r"(?:\+52[ -]?)?(?:\(\d{2,3}\)[ -]?|\b\d{2,3}[ -])\d{3,4}[ -]?\d{4}\b"
+            ),
+
+            # MEDICO: Nombres de médicos
+            SanitizationRule(
+                "MEDICO",
+                r"(?:Dra?|Doctora?|M[ée]dic[oa](?:\s+tratante)?|Cirujan[oa])\.?\s*:?\s+(" + _NAME + r")",
+                group=1,
+            ),
+
+            # PACIENTE: Nombres de pacientes/asegurados
+            SanitizationRule(
+                "PACIENTE",
+                r"(?:Nombre\s+del\s+[Pp]aciente|[Pp]aciente|[Aa]segurad[oa]|[Tt]itular|"
+                r"[Bb]eneficiari[oa]|Patient)\s*:?\s+(" + _NAME + r")",
+                group=1,
+            ),
         ]
 
     def detect_sensitive_data(self, text: str) -> List[Dict[str, str]]:
-        """Detecta datos sensibles sin modificar - retorna para tabla"""
+        """Detecta datos sensibles - retorna tabla"""
         findings = []
         seen = set()
 
-        for label, pattern, flags in self.rules:
-            for match in re.finditer(pattern, text, flags):
-                # Usar el grupo 1 si existe (captura), sino el match completo
-                value = match.group(1) if match.groups() else match.group(0)
-                key = (label, value)
-
+        for rule in self.rules:
+            for start, end, value in rule.scan(text):
+                key = (rule.label, value)
                 if key not in seen:
                     findings.append({
-                        "tipo": label,
+                        "tipo": rule.label,
                         "valor_original": value,
-                        "posicion": f"Car. {match.start()}-{match.end()}"
+                        "posicion": f"Car. {start}-{end}"
                     })
                     seen.add(key)
 
@@ -115,13 +184,20 @@ class LocalDataProcessor:
     def tokenize_text(self, text: str) -> str:
         """Reemplaza datos sensibles con tokens [[LABEL#NNNN]]"""
         result = text
+        offsets = []
 
-        for label, pattern, flags in self.rules:
-            def replace_with_token(match):
-                value = match.group(1) if match.groups() else match.group(0)
-                return self.vault.tokenize(label, value)
+        # Escanear todas las reglas para encontrar conflictos
+        for rule in self.rules:
+            for start, end, value in rule.scan(text):
+                offsets.append((start, end, rule.label, value))
 
-            result = re.sub(pattern, replace_with_token, result, flags=flags)
+        # Ordenar por posición (reverso para no desplazar índices)
+        offsets.sort(key=lambda x: x[0], reverse=True)
+
+        # Reemplazar de atrás hacia adelante
+        for start, end, label, value in offsets:
+            token = self.vault.tokenize(label, value)
+            result = result[:start] + token + result[end:]
 
         return result
 

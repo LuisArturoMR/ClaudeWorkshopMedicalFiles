@@ -115,12 +115,48 @@ st.markdown("""
         color: #1f1f1f !important;
     }
 
-    /* Sidebar text color */
+    /* Sidebar - Todos los textos en negro */
     [data-testid="stSidebar"] {
         color: #1f1f1f !important;
     }
 
+    [data-testid="stSidebar"] * {
+        color: #1f1f1f !important;
+    }
+
     [data-testid="stSidebar"] span {
+        color: #1f1f1f !important;
+    }
+
+    [data-testid="stSidebar"] p {
+        color: #1f1f1f !important;
+    }
+
+    [data-testid="stSidebar"] div {
+        color: #1f1f1f !important;
+    }
+
+    /* Sidebar links */
+    [data-testid="stSidebar"] a {
+        color: #1a7a7a !important;
+        text-decoration: none;
+    }
+
+    [data-testid="stSidebar"] a:hover {
+        color: #0d5555 !important;
+        text-decoration: underline;
+    }
+
+    /* Sidebar radio buttons y expanders */
+    [data-testid="stSidebar"] .stRadio {
+        color: #1f1f1f !important;
+    }
+
+    [data-testid="stSidebar"] .streamlit-expanderHeader {
+        color: #1f1f1f !important;
+    }
+
+    [data-testid="stSidebar"] button {
         color: #1f1f1f !important;
     }
 

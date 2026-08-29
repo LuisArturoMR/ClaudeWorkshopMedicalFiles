@@ -1,0 +1,65 @@
+# 🔒 SEGURIDAD - NUNCA SUBIR DATOS SENSIBLES
+
+# Archivos originales (contienen datos reales)
+raw_data/
+organized_data/
+for_claude/
+
+# Outputs (pueden contener información generada)
+outputs/
+
+# Configuración local
+.env
+.env.local
+secrets.enc
+
+# Datos de prueba con información real
+*.key
+*.pem
+*.p12
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# OS
+Thumbs.db
+.DS_Store

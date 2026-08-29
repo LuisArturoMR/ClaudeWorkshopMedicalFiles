@@ -1,0 +1,7 @@
+# Sistema de Automatización Médica - Dependencias
+
+# Claude API
+anthropic>=0.25.0
+
+# Herramientas opcionales
+python-dotenv>=1.0.0  # Para cargar .env

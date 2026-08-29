@@ -1,0 +1,102 @@
+name: 🔒 Security Checks
+
+on: [push, pull_request]
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: 🔍 Verificar no hay datos sensibles
+      run: |
+        echo "Buscando patrones de datos sensibles..."
+
+        # SSN pattern
+        if grep -r '\b[0-9]\{3\}-[0-9]\{2\}-[0-9]\{4\}\b' scripts/ docs/ ; then
+          echo "❌ ENCONTRADO: Patrón SSN en código"
+          exit 1
+        fi
+
+        # Email pattern con dominios específicos (privados)
+        if grep -r '@myemail.com' scripts/ ; then
+          echo "❌ ENCONTRADO: Email privado en código"
+          exit 1
+        fi
+
+        # API Keys
+        if grep -r 'sk-ant-' scripts/ --exclude=.env.example ; then
+          echo "❌ ENCONTRADO: API Key en código"
+          exit 1
+        fi
+
+        echo "✅ No se encontraron datos sensibles"
+
+    - name: ✅ Verificar .gitignore
+      run: |
+        echo "Verificando que archivos sensibles están ignorados..."
+
+        if [ -f "raw_data/README.md" ] && grep -q "raw_data" .gitignore ; then
+          echo "✅ raw_data/ está en .gitignore"
+        fi
+
+        if grep -q "organized_data" .gitignore ; then
+          echo "✅ organized_data/ está en .gitignore"
+        fi
+
+        if grep -q "for_claude" .gitignore ; then
+          echo "✅ for_claude/ está en .gitignore"
+        fi
+
+        if grep -q ".env" .gitignore && ! grep -q ".env.example" .gitignore ; then
+          echo "✅ .env está ignorado pero .env.example no"
+        fi
+
+    - name: ✅ Verificar no hay .env comiteado
+      run: |
+        if git ls-files | grep -q "\.env$" ; then
+          echo "❌ ERROR: .env está comiteado"
+          exit 1
+        else
+          echo "✅ .env no está comiteado"
+        fi
+
+    - name: 🔍 Verificar documentación
+      run: |
+        echo "Verificando documentación..."
+
+        if [ -f "README.md" ] ; then
+          echo "✅ README.md existe"
+        else
+          echo "⚠️  README.md no existe"
+        fi
+
+        if [ -f "CONTRIBUTING.md" ] ; then
+          echo "✅ CONTRIBUTING.md existe"
+        fi
+
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: 📦 Instalar dependencias
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 black isort
+
+    - name: 🎨 Verificar formato (black)
+      run: black --check scripts/ || true
+
+    - name: 📋 Verificar imports (isort)
+      run: isort --check-only scripts/ || true
+
+    - name: 🐍 Verificar sintaxis (flake8)
+      run: flake8 scripts/ --count --select=E9,F63,F7,F82 --show-source --statistics || true

@@ -5,6 +5,7 @@ Lee archivos localmente, NO los envía a Claude
 """
 
 import os
+import shutil
 from pathlib import Path
 from datetime import datetime
 
@@ -36,7 +37,7 @@ def organize_files(source_dir="raw_data", dest_dir="organized_data"):
     print(f"\n📁 Organizando archivos desde: {source_dir}")
     print("-" * 50)
 
-    # Recorrer archivos
+    # Recorrer y copiar archivos
     for file in sorted(source.glob("*")):
         if file.is_file() and not file.name.startswith("."):
             category = "Otros"
@@ -48,14 +49,19 @@ def organize_files(source_dir="raw_data", dest_dir="organized_data"):
                     category = cat
                     break
 
-            # Crear enlace simbólico (no copia, no pierde datos)
-            dest_path = dest / category / file.name
+            # Copiar archivo a carpeta de destino
+            dest_category = dest / category
+            dest_category.mkdir(parents=True, exist_ok=True)  # Asegurar que existe
+            dest_path = dest_category / file.name
+
             try:
-                # Usa enlaces simbólicos para no duplicar archivos
+                # Copiar archivo (no copia simbólica para evitar problemas de permisos)
                 if not dest_path.exists():
-                    os.symlink(file.resolve(), dest_path)
+                    shutil.copy2(file, dest_path)
                     print(f"  ✅ {file.name:40} → {category}/")
                     files_moved += 1
+                else:
+                    print(f"  ⚠️  {file.name:40} → {category}/ (ya existe)")
             except Exception as e:
                 print(f"  ❌ Error con {file.name}: {e}")
 

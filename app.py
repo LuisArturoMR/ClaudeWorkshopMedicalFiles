@@ -759,8 +759,30 @@ elif page == "🤖 Automatizaciones":
                                 docs_dict = {}
                                 for display_name in selected_docs:
                                     file_path = available_files[display_name]
-                                    with open(file_path, 'r', encoding='utf-8') as f:
-                                        docs_dict[display_name] = f.read()
+
+                                    # Detectar tipo de archivo
+                                    if file_path.suffix.lower() == '.pdf':
+                                        # Extraer texto de PDF
+                                        import pdfplumber
+                                        import io
+
+                                        with open(file_path, 'rb') as f:
+                                            pdf_file = io.BytesIO(f.read())
+
+                                        try:
+                                            with pdfplumber.open(pdf_file) as pdf:
+                                                text = ""
+                                                for page_num, page in enumerate(pdf.pages, 1):
+                                                    extracted = page.extract_text()
+                                                    if extracted:
+                                                        text += f"--- Página {page_num} ---\n{extracted}\n\n"
+                                                docs_dict[display_name] = text if text else "[PDF sin texto extraíble]"
+                                        except Exception as pdf_err:
+                                            docs_dict[display_name] = f"[Error extrayendo PDF: {str(pdf_err)[:50]}]"
+                                    else:
+                                        # Leer como texto
+                                        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                                            docs_dict[display_name] = f.read()
 
                                 # Llamar a Claude
                                 generator = st.session_state.generator
@@ -806,8 +828,30 @@ elif page == "🤖 Automatizaciones":
                     with st.spinner("Generando..."):
                         try:
                             file_path = available_files[selected_file]
-                            with open(file_path, 'r', encoding='utf-8') as f:
-                                content = f.read()
+
+                            # Detectar tipo de archivo
+                            if file_path.suffix.lower() == '.pdf':
+                                # Extraer texto de PDF
+                                import pdfplumber
+                                import io
+
+                                with open(file_path, 'rb') as f:
+                                    pdf_file = io.BytesIO(f.read())
+
+                                content = ""
+                                try:
+                                    with pdfplumber.open(pdf_file) as pdf:
+                                        for page_num, page in enumerate(pdf.pages, 1):
+                                            extracted = page.extract_text()
+                                            if extracted:
+                                                content += f"--- Página {page_num} ---\n{extracted}\n\n"
+                                except Exception as pdf_err:
+                                    st.error(f"Error extrayendo PDF: {pdf_err}")
+                                    content = "[Error en PDF]"
+                            else:
+                                # Leer como texto
+                                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                                    content = f.read()
 
                             generator = st.session_state.generator
                             prompt_content = f"{content}\n\nDiagnóstico: {diagnosis}\n\nDetalles: {condition}"

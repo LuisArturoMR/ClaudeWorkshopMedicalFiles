@@ -13,17 +13,45 @@ import tempfile
 import shutil
 from datetime import datetime
 
-# Agregar scripts al path
-sys.path.insert(0, str(Path(__file__).parent / "scripts"))
+# No necesario agregar scripts al path, usamos importlib
 
 # Importar módulos propios
 try:
-    from organize_files import organize_files as org_module
-    from read_and_redact import LocalDataProcessor
-    from generate_with_claude import ClaudeDocumentGenerator
+    # Importar módulos con nombres numéricos
+    import importlib.util
+
+    # Cargar 01_organize_files.py
+    spec = importlib.util.spec_from_file_location(
+        "organize_files",
+        str(Path(__file__).parent / "scripts" / "01_organize_files.py")
+    )
+    organize_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(organize_module)
+
+    # Cargar 02_read_and_redact.py
+    spec = importlib.util.spec_from_file_location(
+        "read_and_redact",
+        str(Path(__file__).parent / "scripts" / "02_read_and_redact.py")
+    )
+    redact_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(redact_module)
+    LocalDataProcessor = redact_module.LocalDataProcessor
+
+    # Cargar 03_generate_with_claude.py
+    spec = importlib.util.spec_from_file_location(
+        "generate_with_claude",
+        str(Path(__file__).parent / "scripts" / "03_generate_with_claude.py")
+    )
+    generate_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(generate_module)
+    ClaudeDocumentGenerator = generate_module.ClaudeDocumentGenerator
+
 except ImportError as e:
-    st.error(f"Error importando módulos: {e}")
-    st.info("Asegúrate de estar en la carpeta correcta y que los scripts existen")
+    st.error(f"❌ Error importando módulos: {e}")
+    st.info("📁 Asegúrate de estar en la carpeta correcta y que los scripts existen en: scripts/")
+    sys.exit(1)
+except Exception as e:
+    st.error(f"❌ Error inesperado: {e}")
     sys.exit(1)
 
 # ════════════════════════════════════════════════════════════════════════════

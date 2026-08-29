@@ -11,12 +11,14 @@ class ClaudeDocumentGenerator:
     """Genera documentos usando Claude con datos redactados"""
 
     def __init__(self):
-        self.client = Anthropic()
         self.api_key = os.getenv("ANTHROPIC_API_KEY")
 
         if not self.api_key:
             print("⚠️  ADVERTENCIA: ANTHROPIC_API_KEY no está configurada")
             print("   Necesitas: export ANTHROPIC_API_KEY='sk-...'")
+            self.client = None
+        else:
+            self.client = Anthropic(api_key=self.api_key)
 
     def read_redacted_file(self, filepath):
         """Lee archivo redactado (que ya está limpio)"""
@@ -54,16 +56,19 @@ Genera como si fueran ejemplos ficticios.
         print("\n🤖 Enviando a Claude para generar carta de apelación...")
         print("   ✅ Datos redactados (solo placeholders enviados)")
 
+        if not self.client:
+            print("❌ API key no configurada")
+            return None
+
         try:
             response = self.client.messages.create(
-                model="claude-opus-5",
+                model="claude-3-5-sonnet-20241022",
                 max_tokens=1500,
                 messages=[{"role": "user", "content": prompt}]
             )
-
             return response.content[0].text
         except Exception as e:
-            print(f"❌ Error: {e}")
+            print(f"❌ Error: {str(e)[:100]}")
             return None
 
     def generate_document_checklist(self, case_data):
@@ -94,16 +99,19 @@ Con breve nota sobre por qué cada uno es importante.
         print("\n🤖 Generando checklist de documentos...")
         print("   ✅ Datos redactados (solo placeholders enviados)")
 
+        if not self.client:
+            print("❌ API key no configurada")
+            return None
+
         try:
             response = self.client.messages.create(
-                model="claude-opus-5",
+                model="claude-3-5-sonnet-20241022",
                 max_tokens=1000,
                 messages=[{"role": "user", "content": prompt}]
             )
-
             return response.content[0].text
         except Exception as e:
-            print(f"❌ Error: {e}")
+            print(f"❌ Error: {str(e)[:100]}")
             return None
 
     def generate_follow_up_email(self, case_data):
@@ -128,17 +136,52 @@ Formato de email profesional.
         print("\n🤖 Generando email de seguimiento...")
         print("   ✅ Datos redactados")
 
+        if not self.client:
+            print("❌ API key no configurada")
+            return None
+
         try:
             response = self.client.messages.create(
-                model="claude-opus-5",
+                model="claude-3-5-sonnet-20241022",
                 max_tokens=800,
                 messages=[{"role": "user", "content": prompt}]
             )
-
             return response.content[0].text
         except Exception as e:
-            print(f"❌ Error: {e}")
+            print(f"❌ Error: {str(e)[:100]}")
             return None
+
+    def chat_with_context(self, user_message, documents):
+        """Chat interactivo con documentos redactados como contexto"""
+        if not self.client:
+            return "❌ API key no configurada"
+
+        context = "\n\n---\n\n".join([f"**{Path(doc).name}**:\n{content}" for doc, content in documents.items()])
+
+        system_prompt = f"""Eres un asistente de automatización médica especializado en procesos de seguros.
+Tu rol es ayudar con consultas sobre documentos médicos redactados.
+
+DOCUMENTOS DISPONIBLES (sin datos personales):
+{context}
+
+Puedes ayudar con:
+- Análisis de documentos médicos
+- Recomendaciones para apelaciones
+- Preguntas sobre cobertura
+- Generación de correspondencia
+
+IMPORTANTE: Solo usa los documentos proporcionados. No inventes datos personales."""
+
+        try:
+            response = self.client.messages.create(
+                model="claude-3-5-sonnet-20241022",
+                max_tokens=1000,
+                system=system_prompt,
+                messages=[{"role": "user", "content": user_message}]
+            )
+            return response.content[0].text
+        except Exception as e:
+            return f"❌ Error: {str(e)[:200]}"
 
     def process_and_generate(self, source_dir="for_claude", output_dir="outputs"):
         """Procesa archivos redactados y genera documentos"""

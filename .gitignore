@@ -4,6 +4,7 @@
 raw_data/
 organized_data/
 organized_files/
+generated_documents/
 for_claude/
 
 # Outputs (pueden contener información generada)

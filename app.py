@@ -141,7 +141,7 @@ st.sidebar.markdown("---")
 
 page = st.sidebar.radio(
     "Selecciona una opción:",
-    ["🏠 Inicio", "📁 Organizar Archivos", "🔐 Redactar Datos", "📄 Generar Documentos"],
+    ["🏠 Inicio", "📁 Organizar Archivos", "🔐 Redactar Datos", "🤖 Automatizaciones"],
     key="page_selector"
 )
 
@@ -658,135 +658,197 @@ elif page == "🔐 Redactar Datos":
         st.info("👆 Carga un archivo para redactar")
 
 # ════════════════════════════════════════════════════════════════════════════
-# PÁGINA: GENERAR DOCUMENTOS
+# PÁGINA: AUTOMATIZACIONES (Con Chat)
 # ════════════════════════════════════════════════════════════════════════════
 
-elif page == "📄 Generar Documentos":
-    st.markdown("## 📄 Generar Documentos con Claude")
+elif page == "🤖 Automatizaciones":
+    st.markdown("## 🤖 Automatizaciones con Claude")
 
     st.markdown("""
     <div class="info-box">
-    <strong>💡 Usando Claude API:</strong> Este sistema usa datos redactados para generar documentos profesionales.
-    Requiere API key de Anthropic.
+    <strong>💬 Chat Inteligente:</strong> Interactúa con Claude usando solo tus documentos redactados (sin PHI/PII).
+    Los datos originales nunca se envían.
     </div>
     """, unsafe_allow_html=True)
+
+    # Crear directorio para documentos generados
+    GENERATED_DIR = Path("generated_documents")
+    GENERATED_DIR.mkdir(exist_ok=True)
 
     # Verificar API key
     api_key = os.getenv("ANTHROPIC_API_KEY")
 
     if not api_key:
         st.warning("""
-        ⚠️ **Atención:** API key de Anthropic no configurada
-
-        Necesitas:
-        1. Obtener API key en: https://console.anthropic.com/
-        2. Configurar: `export ANTHROPIC_API_KEY="sk-ant-..."`
-        3. Reiniciar la aplicación
+        ⚠️ **API key no configurada**
+        1. Obtener en: https://console.anthropic.com/
+        2. Crear archivo `.env` con: `ANTHROPIC_API_KEY=sk-ant-...`
         """)
     else:
-        st.success("✅ API key configurada correctamente")
+        st.success("✅ API key configurada")
 
     st.markdown("---")
 
-    # Seleccionar tipo de documento
-    doc_type = st.selectbox(
-        "📋 Tipo de documento a generar:",
-        ["Carta de Apelación", "Checklist de Documentos", "Email de Seguimiento"]
-    )
+    # Mostrar documentos generados previamente
+    st.markdown("### 📂 Documentos Guardados Localmente:")
 
-    st.markdown("---")
-
-    # Upload de archivo redactado
-    uploaded_file = st.file_uploader(
-        "📤 Carga archivo redactado",
-        type=["txt"],
-        key="generate_upload"
-    )
-
-    if uploaded_file:
-        st.markdown("### Archivo cargado:")
-        st.markdown(f"✅ **{uploaded_file.name}**")
-
-        st.markdown("---")
-
-        # Información adicional
-        diagnosis = st.text_input(
-            "🏥 Diagnóstico (ej: Diabetes tipo 2)",
-            placeholder="Ingresa el diagnóstico"
-        )
-
-        condition = st.text_area(
-            "📝 Detalles de la negación",
-            placeholder="Describe por qué fue negada la cobertura",
-            height=100
-        )
-
-        st.markdown("---")
-
-        # Botón para generar
-        if st.button("✨ Generar Documento", key="generate_btn", type="primary"):
-            if not diagnosis or not condition:
-                st.warning("Por favor completa todos los campos")
-            elif not api_key:
-                st.error("API key de Anthropic no configurada")
-            else:
-                with st.spinner(f"Generando {doc_type.lower()}..."):
-                    try:
-                        # Leer contenido
-                        redacted_content = uploaded_file.read().decode('utf-8')
-
-                        # Generar documento
-                        generator = st.session_state.generator
-
-                        if doc_type == "Carta de Apelación":
-                            result = generator.generate_appeal_letter(
-                                f"{redacted_content}\n\nDiagnóstico: {diagnosis}\nCondición: {condition}"
-                            )
-                            filename = f"carta_apelacion_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-
-                        elif doc_type == "Checklist de Documentos":
-                            result = generator.generate_document_checklist(
-                                f"{redacted_content}\n\nDiagnóstico: {diagnosis}"
-                            )
-                            filename = f"checklist_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-
-                        else:  # Email de Seguimiento
-                            result = generator.generate_follow_up_email(
-                                f"{redacted_content}\n\nDiagnóstico: {diagnosis}"
-                            )
-                            filename = f"email_seguimiento_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-
-                        if result:
-                            st.success(f"✅ {doc_type} generado correctamente")
-
-                            st.markdown("---")
-
-                            # Mostrar resultado
-                            st.markdown("### 📄 Documento generado:")
-                            st.text_area(
-                                "Contenido:",
-                                result,
-                                height=400,
-                                disabled=True
-                            )
-
-                            st.markdown("---")
-
-                            # Descargar
-                            st.download_button(
-                                label=f"📥 Descargar {doc_type}",
-                                data=result,
-                                file_name=filename,
-                                mime="text/plain",
-                                type="primary"
-                            )
-                        else:
-                            st.error("Error generando documento. Revisa API key y límites.")
-
-                    except Exception as e:
-                        st.error(f"❌ Error: {e}")
+    generated_files = list(GENERATED_DIR.glob("*.txt"))
+    if generated_files:
+        for f in sorted(generated_files):
+            col1, col2 = st.columns([4, 1])
+            with col1:
+                st.markdown(f"📄 {f.name} ({f.stat().st_size / 1024:.1f} KB)")
+            with col2:
+                if st.button("🗑️", key=f"delete_gen_{f}"):
+                    f.unlink()
+                    st.success(f"Eliminado: {f.name}")
+                    st.rerun()
     else:
-        st.info("👆 Carga un archivo redactado para generar documentos")
+        st.info("📭 No hay documentos guardados")
+
+    st.markdown("---")
+
+    # Tabs: Chat vs Generador
+    tab_chat, tab_generator = st.tabs(["💬 Chat", "📋 Generador de Documentos"])
+
+    with tab_chat:
+        st.markdown("### 💬 Chat con Claude (Documentos Redactados)")
+
+        # Seleccionar documentos redactados
+        ORGANIZED_DIR = Path("organized_files")
+        available_files = {}
+        for category_dir in sorted(ORGANIZED_DIR.iterdir()) if ORGANIZED_DIR.exists() else []:
+            if category_dir.is_dir():
+                for file_path in sorted(category_dir.glob("*")):
+                    if file_path.is_file():
+                        display_name = f"{category_dir.name} / {file_path.name}"
+                        available_files[display_name] = file_path
+
+        if available_files:
+            selected_docs = st.multiselect(
+                "📁 Selecciona documentos para el contexto:",
+                options=available_files.keys(),
+                key="chat_docs"
+            )
+
+            if selected_docs and api_key:
+                # Inicializar chat history
+                if "chat_history" not in st.session_state:
+                    st.session_state.chat_history = []
+
+                # Mostrar conversación
+                for msg in st.session_state.chat_history:
+                    with st.chat_message(msg["role"]):
+                        st.markdown(msg["content"])
+
+                # Input del usuario
+                user_input = st.chat_input("Escribe tu pregunta o solicitud...")
+
+                if user_input:
+                    # Agregar mensaje del usuario
+                    st.session_state.chat_history.append({"role": "user", "content": user_input})
+
+                    with st.chat_message("user"):
+                        st.markdown(user_input)
+
+                    # Procesar con Claude
+                    with st.chat_message("assistant"):
+                        with st.spinner("Claude está pensando..."):
+                            try:
+                                # Cargar documentos seleccionados
+                                docs_dict = {}
+                                for display_name in selected_docs:
+                                    file_path = available_files[display_name]
+                                    with open(file_path, 'r', encoding='utf-8') as f:
+                                        docs_dict[display_name] = f.read()
+
+                                # Llamar a Claude
+                                generator = st.session_state.generator
+                                response = generator.chat_with_context(user_input, docs_dict)
+
+                                st.markdown(response)
+                                st.session_state.chat_history.append({"role": "assistant", "content": response})
+
+                            except Exception as e:
+                                error_msg = f"❌ Error: {str(e)[:100]}"
+                                st.error(error_msg)
+                                st.session_state.chat_history.append({"role": "assistant", "content": error_msg})
+            else:
+                st.info("👆 Selecciona documentos y asegúrate de que la API key esté configurada")
+        else:
+            st.info("📭 No hay documentos redactados. Primero redacta archivos en la sección anterior.")
+
+    with tab_generator:
+        st.markdown("### 📋 Generador Automático de Documentos")
+
+        # Seleccionar tipo de documento
+        doc_type = st.selectbox(
+            "Tipo de documento:",
+            ["Carta de Apelación", "Checklist de Documentos", "Email de Seguimiento"]
+        )
+
+        # Seleccionar archivo
+        if available_files and api_key:
+            selected_file = st.selectbox(
+                "Selecciona un archivo:",
+                options=available_files.keys(),
+                key="gen_file"
+            )
+
+            # Información adicional
+            diagnosis = st.text_input("🏥 Diagnóstico:", placeholder="Ej: Diabetes tipo 2")
+            condition = st.text_area("📝 Detalles:", placeholder="Por qué fue negada", height=80)
+
+            if st.button("✨ Generar Documento", type="primary"):
+                if not diagnosis or not condition:
+                    st.warning("Completa todos los campos")
+                else:
+                    with st.spinner("Generando..."):
+                        try:
+                            file_path = available_files[selected_file]
+                            with open(file_path, 'r', encoding='utf-8') as f:
+                                content = f.read()
+
+                            generator = st.session_state.generator
+                            prompt_content = f"{content}\n\nDiagnóstico: {diagnosis}\n\nDetalles: {condition}"
+
+                            if doc_type == "Carta de Apelación":
+                                result = generator.generate_appeal_letter(prompt_content)
+                                filename = f"carta_apelacion_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+                            elif doc_type == "Checklist de Documentos":
+                                result = generator.generate_document_checklist(prompt_content)
+                                filename = f"checklist_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+                            else:
+                                result = generator.generate_follow_up_email(prompt_content)
+                                filename = f"email_seguimiento_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+
+                            if result:
+                                st.success(f"✅ Documento generado")
+
+                                # Guardar localmente
+                                output_path = GENERATED_DIR / filename
+                                with open(output_path, 'w', encoding='utf-8') as f:
+                                    f.write(result)
+                                st.success(f"✅ Guardado localmente: {filename}")
+
+                                # Mostrar contenido
+                                st.text_area("Contenido:", result, height=300, disabled=True)
+
+                                # Descargar
+                                st.download_button(
+                                    label=f"📥 Descargar {doc_type}",
+                                    data=result,
+                                    file_name=filename,
+                                    mime="text/plain",
+                                    type="primary"
+                                )
+                            else:
+                                st.error("❌ Error generando documento")
+
+                        except Exception as e:
+                            st.error(f"❌ Error: {str(e)[:100]}")
+        else:
+            st.info("📭 No hay documentos disponibles o API key no configurada")
 
 # ════════════════════════════════════════════════════════════════════════════
 # FOOTER

@@ -423,17 +423,15 @@ elif page == "🔐 Redactar Datos":
     - 📋 Números de póliza
     - 📅 Fechas de nacimiento
 
-    **Formatos soportados:** Texto plano (.txt)
-
-    *Tip:* Si tienes archivos PDF o Word, copia el texto a un archivo .txt primero
+    **Formatos soportados:** Texto (.txt) y PDF
     """)
 
     st.markdown("---")
 
-    # Upload de archivo - solo TXT
+    # Upload de archivo - TXT y PDF
     uploaded_file = st.file_uploader(
-        "📤 Carga un archivo de texto para redactar",
-        type=["txt"],
+        "📤 Carga un archivo para redactar",
+        type=["txt", "pdf"],
         key="redact_upload"
     )
 
@@ -447,11 +445,31 @@ elif page == "🔐 Redactar Datos":
         if st.button("🔐 Redactar Datos", key="redact_btn", type="primary"):
             with st.spinner("Redactando datos..."):
                 try:
-                    # Leer contenido como texto
-                    content = uploaded_file.read().decode('utf-8', errors='ignore')
+                    # Detectar tipo de archivo y extraer contenido
+                    file_extension = uploaded_file.name.lower().split('.')[-1]
+
+                    if file_extension == 'pdf':
+                        # Procesar PDF
+                        import pdfplumber
+                        import io
+
+                        pdf_bytes = uploaded_file.read()
+                        pdf_file = io.BytesIO(pdf_bytes)
+
+                        with pdfplumber.open(pdf_file) as pdf:
+                            content = ""
+                            for page_num, page in enumerate(pdf.pages, 1):
+                                text = page.extract_text()
+                                if text:
+                                    content += f"--- Página {page_num} ---\n{text}\n\n"
+
+                        st.info(f"📄 Extrayendo texto de {len(pdf.pages)} páginas...")
+                    else:
+                        # Procesar archivo de texto
+                        content = uploaded_file.read().decode('utf-8', errors='ignore')
 
                     if not content.strip():
-                        st.warning("⚠️ El archivo está vacío o no se puede leer como texto")
+                        st.warning("⚠️ El archivo está vacío o no se puede extraer texto")
                     else:
                         # Redactar
                         processor = st.session_state.processor
@@ -476,11 +494,12 @@ elif page == "🔐 Redactar Datos":
 
                         st.markdown("---")
 
-                        # Botón de descarga
+                        # Botón de descarga - siempre como .txt
+                        base_name = uploaded_file.name.rsplit('.', 1)[0]
                         st.download_button(
-                            label="📥 Descargar archivo redactado",
+                            label="📥 Descargar archivo redactado (.txt)",
                             data=redacted_content,
-                            file_name=f"redactado_{uploaded_file.name}",
+                            file_name=f"redactado_{base_name}.txt",
                             mime="text/plain",
                             type="primary"
                         )

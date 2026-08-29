@@ -422,14 +422,18 @@ elif page == "🔐 Redactar Datos":
     - 👤 Nombres completos
     - 📋 Números de póliza
     - 📅 Fechas de nacimiento
+
+    **Formatos soportados:** Texto plano (.txt)
+
+    *Tip:* Si tienes archivos PDF o Word, copia el texto a un archivo .txt primero
     """)
 
     st.markdown("---")
 
-    # Upload de archivo
+    # Upload de archivo - solo TXT
     uploaded_file = st.file_uploader(
-        "📤 Carga un archivo para redactar",
-        type=["txt", "pdf", "doc", "docx"],
+        "📤 Carga un archivo de texto para redactar",
+        type=["txt"],
         key="redact_upload"
     )
 
@@ -443,47 +447,50 @@ elif page == "🔐 Redactar Datos":
         if st.button("🔐 Redactar Datos", key="redact_btn", type="primary"):
             with st.spinner("Redactando datos..."):
                 try:
-                    # Leer contenido
+                    # Leer contenido como texto
                     content = uploaded_file.read().decode('utf-8', errors='ignore')
 
-                    # Redactar
-                    processor = st.session_state.processor
-                    redacted_content = processor.redact_text(content)
+                    if not content.strip():
+                        st.warning("⚠️ El archivo está vacío o no se puede leer como texto")
+                    else:
+                        # Redactar
+                        processor = st.session_state.processor
+                        redacted_content = processor.redact_text(content)
 
-                    # Contar redacciones
-                    import re
-                    redactions = len(re.findall(r'\[.*?_REDACTED\]', redacted_content))
+                        # Contar redacciones
+                        import re
+                        redactions = len(re.findall(r'\[.*?_REDACTED\]', redacted_content))
 
-                    st.success(f"✅ Archivo redactado correctamente ({redactions} datos sensibles eliminados)")
+                        st.success(f"✅ Archivo redactado correctamente ({redactions} datos sensibles eliminados)")
 
-                    st.markdown("---")
+                        st.markdown("---")
 
-                    # Mostrar preview
-                    st.markdown("### 📄 Vista previa del archivo redactado:")
-                    st.text_area(
-                        "Contenido redactado:",
-                        redacted_content,
-                        height=300,
-                        disabled=True
-                    )
+                        # Mostrar preview
+                        st.markdown("### 📄 Vista previa del archivo redactado:")
+                        st.text_area(
+                            "Contenido redactado:",
+                            redacted_content,
+                            height=300,
+                            disabled=True
+                        )
 
-                    st.markdown("---")
+                        st.markdown("---")
 
-                    # Botón de descarga
-                    st.download_button(
-                        label="📥 Descargar archivo redactado",
-                        data=redacted_content,
-                        file_name=f"redactado_{uploaded_file.name}",
-                        mime="text/plain",
-                        type="primary"
-                    )
+                        # Botón de descarga
+                        st.download_button(
+                            label="📥 Descargar archivo redactado",
+                            data=redacted_content,
+                            file_name=f"redactado_{uploaded_file.name}",
+                            mime="text/plain",
+                            type="primary"
+                        )
 
-                    st.markdown("""
-                    <div class="success-box">
-                    <strong>✨ Listo para el siguiente paso:</strong> Este archivo redactado es seguro
-                    para enviar a Claude o compartir con otros.
-                    </div>
-                    """, unsafe_allow_html=True)
+                        st.markdown("""
+                        <div class="success-box">
+                        <strong>✨ Listo para el siguiente paso:</strong> Este archivo redactado es seguro
+                        para enviar a Claude o compartir con otros.
+                        </div>
+                        """, unsafe_allow_html=True)
 
                 except Exception as e:
                     st.error(f"❌ Error al redactar: {e}")

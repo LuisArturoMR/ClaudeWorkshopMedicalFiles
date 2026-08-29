@@ -5,6 +5,10 @@ Interface desktop para organizar, redactar y generar documentos médicos
 con privacidad local garantizada.
 """
 
+# ⚠️ CARGAR .env PRIMERO (antes de cualquier otra cosa)
+from dotenv import load_dotenv
+load_dotenv()
+
 import streamlit as st
 import os
 import sys
